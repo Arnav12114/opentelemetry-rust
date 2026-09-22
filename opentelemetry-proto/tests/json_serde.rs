@@ -24,8 +24,9 @@ mod json_serde {
     use opentelemetry_proto::tonic::logs::v1::{LogRecord, ResourceLogs, ScopeLogs};
     #[cfg(feature = "metrics")]
     use opentelemetry_proto::tonic::metrics::v1::{
-        metric::Data, number_data_point::Value as MetricValue, Gauge, Histogram,
-        HistogramDataPoint, Metric, NumberDataPoint, ResourceMetrics, ScopeMetrics, Sum,
+        exemplar::Value as ExemplarValue, metric::Data, number_data_point::Value as MetricValue,
+        Gauge, Histogram, HistogramDataPoint, Metric, NumberDataPoint, ResourceMetrics,
+        ScopeMetrics, Sum,
     };
     use opentelemetry_proto::tonic::resource::v1::Resource;
     #[cfg(feature = "trace")]
@@ -987,6 +988,9 @@ mod json_serde {
                       }]
                     }
                   }, {
+                    "name": "non-finite",
+                    "gauge": {"dataPoints": [{"asDouble": "NaN"}]}
+                  }, {
                     "name": "summary",
                     "summary": {
                       "dataPoints": [{
@@ -1006,8 +1010,22 @@ mod json_serde {
                 metrics[0].data,
                 Some(Data::ExponentialHistogram(_))
             ));
-            assert!(matches!(metrics[1].data, Some(Data::Sum(_))));
-            assert!(matches!(metrics[2].data, Some(Data::Summary(_))));
+            let Some(Data::Sum(sum)) = &metrics[1].data else {
+                panic!("expected sum")
+            };
+            assert_eq!(sum.data_points[0].value, Some(MetricValue::AsInt(7)));
+            assert_eq!(
+                sum.data_points[0].exemplars[0].value,
+                Some(ExemplarValue::AsInt(3))
+            );
+            let Some(Data::Gauge(gauge)) = &metrics[2].data else {
+                panic!("expected gauge")
+            };
+            assert!(matches!(
+                gauge.data_points[0].value,
+                Some(MetricValue::AsDouble(value)) if value.is_nan()
+            ));
+            assert!(matches!(metrics[3].data, Some(Data::Summary(_))));
         }
 
         // `ExportTraceServiceRequest` from the OpenTelemetry proto examples

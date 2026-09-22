@@ -143,7 +143,11 @@ fn build_tonic() {
         builder = builder
             .field_attribute(path, "#[cfg_attr(feature = \"with-serde\", serde(serialize_with = \"crate::proto::serializers::serialize_u64_to_string\", deserialize_with = \"crate::proto::serializers::deserialize_string_to_u64\"))]")
     }
-    for path in ["profiles.v1development.Profile.time_nanos"] {
+    for path in [
+        "metrics.v1.NumberDataPoint.value.as_int",
+        "metrics.v1.Exemplar.value.as_int",
+        "profiles.v1development.Profile.time_nanos",
+    ] {
         builder = builder
             .field_attribute(path, "#[cfg_attr(feature = \"with-serde\", serde(serialize_with = \"crate::proto::serializers::serialize_i64_to_string\", deserialize_with = \"crate::proto::serializers::deserialize_string_to_i64\"))]")
     }
@@ -187,6 +191,8 @@ fn build_tonic() {
     // TODO: More needs to be added here as we find more fields that need this special handling
     for path in [
         // metrics
+        "metrics.v1.NumberDataPoint.value.as_double",
+        "metrics.v1.Exemplar.value.as_double",
         "metrics.v1.SummaryDataPoint.ValueAtQuantile.value",
         "metrics.v1.SummaryDataPoint.ValueAtQuantile.quantile",
     ] {
@@ -202,7 +208,11 @@ fn build_tonic() {
         .field_attribute("common.v1.AnyValue.value", "#[cfg_attr(feature =\"with-serde\", serde(flatten, serialize_with = \"crate::proto::serializers::serialize_to_value\", deserialize_with = \"crate::proto::serializers::deserialize_from_value\"))]");
 
     // flatten
-    for path in ["metrics.v1.Metric.data", "metrics.v1.NumberDataPoint.value"] {
+    for path in [
+        "metrics.v1.Metric.data",
+        "metrics.v1.NumberDataPoint.value",
+        "metrics.v1.Exemplar.value",
+    ] {
         builder =
             builder.field_attribute(path, "#[cfg_attr(feature =\"with-serde\", serde(flatten))]");
     }
