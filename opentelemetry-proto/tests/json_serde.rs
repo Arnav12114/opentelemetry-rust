@@ -962,6 +962,54 @@ mod json_serde {
             assert!(empty.resource_metrics.is_empty());
         }
 
+        #[test]
+        fn deserialize_metrics_with_omitted_message_defaults() {
+            let request: ExportMetricsServiceRequest = serde_json::from_str(
+                r#"{
+                  "resourceMetrics": [{"scopeMetrics": [{"metrics": [{
+                    "name": "exponential",
+                    "exponentialHistogram": {
+                      "aggregationTemporality": 1,
+                      "dataPoints": [{
+                        "timeUnixNano": "2",
+                        "count": "2",
+                        "positive": {"bucketCounts": ["1", "1"]}
+                      }]
+                    }
+                  }, {
+                    "name": "exemplar",
+                    "sum": {
+                      "aggregationTemporality": 2,
+                      "dataPoints": [{
+                        "timeUnixNano": "2",
+                        "asInt": "7",
+                        "exemplars": [{"timeUnixNano": "1", "asInt": "3"}]
+                      }]
+                    }
+                  }, {
+                    "name": "summary",
+                    "summary": {
+                      "dataPoints": [{
+                        "timeUnixNano": "2",
+                        "count": "1",
+                        "sum": 0,
+                        "quantileValues": [{}]
+                      }]
+                    }
+                  }]}]}]
+                }"#,
+            )
+            .unwrap();
+
+            let metrics = &request.resource_metrics[0].scope_metrics[0].metrics;
+            assert!(matches!(
+                metrics[0].data,
+                Some(Data::ExponentialHistogram(_))
+            ));
+            assert!(matches!(metrics[1].data, Some(Data::Sum(_))));
+            assert!(matches!(metrics[2].data, Some(Data::Summary(_))));
+        }
+
         // `ExportTraceServiceRequest` from the OpenTelemetry proto examples
         // see <https://github.com/open-telemetry/opentelemetry-proto/blob/v1.3.2/examples/metrics.json>
         mod example {
